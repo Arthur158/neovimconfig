@@ -28,6 +28,7 @@ require('lazy').setup({
   -- Git related plugins
   'tpope/vim-fugitive',
   'tpope/vim-rhubarb',
+  'tpope/vim-surround',
 
   -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
@@ -50,6 +51,31 @@ require('lazy').setup({
       'folke/neodev.nvim',
     },
   },
+  {
+    "azratul/live-share.nvim",
+    dependencies = {
+      "jbyuki/instant.nvim",
+    },
+    config = function()
+      vim.g.instant_username = "tur"
+      require("live-share").setup({
+       -- Add your configuration here
+      })
+    end
+  },
+  -- {
+  -- 'mrcjkb/haskell-tools.nvim',
+  --   version = '^5', -- Recommended
+  --   lazy = false, -- This plugin is already lazy
+  -- },
+  {
+    "olimorris/codecompanion.nvim",
+    opts = {},
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "nvim-treesitter/nvim-treesitter",
+    },
+  },
   -- {
   --   'nvim-telescope/telescope-frecency.nvim',
   --   requires = {'tami5/sqlite.lua'},
@@ -57,13 +83,59 @@ require('lazy').setup({
   --     require('telescope').load_extension('frecency')
   --   end
   -- },
-  {
-    'neovimhaskell/haskell-vim',
-    ft = { 'haskell' },
-    config = function()
-      -- Plugin-specific configuration
-    end
-  },
+{
+  "derekelkins/agda-vim",
+  lazy = false,  -- Load immediately
+},
+{
+  'isovector/cornelis',
+  name = 'cornelis',
+  ft = 'agda',
+  build = 'stack install',
+  dependencies = {'neovimhaskell/nvim-hs.vim', 'kana/vim-textobj-user'},
+  version = '*',
+  config = function()
+    require("plugins.cornelis")
+  end,
+},
+  -- {
+  --   'neovimhaskell/haskell-vim',
+  --   ft = { 'haskell' },
+  --   config = function()
+  --     -- Plugin-specific configuration
+  --   end
+  -- },
+  -- {
+  --   "scalameta/nvim-metals",
+  --   dependencies = {
+  --     "nvim-lua/plenary.nvim",
+  --   },
+  --   ft = { "scala", "sbt", "java" },
+  --   opts = function()
+  --     local metals_config = require("metals").bare_config()
+  --     metals_config.on_attach = function(client, bufnr)
+  --       -- your on_attach function
+  --     end
+  --
+  --     return metals_config
+  --   end,
+  --   config = function(self, metals_config)
+  --     local nvim_metals_group = vim.api.nvim_create_augroup("nvim-metals", { clear = true })
+  --     vim.api.nvim_create_autocmd("FileType", {
+  --       pattern = self.ft,
+  --       callback = function()
+  --         require("metals").initialize_or_attach(metals_config)
+  --       end,
+  --       group = nvim_metals_group,
+  --     })
+  --   end
+  -- },
+-- {
+--   'untitled-ai/jupyter_ascending.vim',
+--   config = function()
+--     require('jupyter_ascending').setup()
+--   end
+-- },
 {
   'voldikss/vim-floaterm',
   config = function()
@@ -71,8 +143,40 @@ require('lazy').setup({
   end
 },
 {
-    'ashinkarov/nvim-agda',
+  'kyazdani42/nvim-web-devicons',
+  config = function()
+    require('nvim-web-devicons').setup { default = true }
+  end
 },
+-- {
+-- 	'nvim-java/nvim-java',
+-- 	dependencies = {
+-- 		'nvim-java/lua-async-await',
+-- 		'nvim-java/nvim-java-refactor',
+-- 		'nvim-java/nvim-java-core',
+-- 		'nvim-java/nvim-java-test',
+-- 		'nvim-java/nvim-java-dap',
+-- 		'MunifTanjim/nui.nvim',
+-- 		'neovim/nvim-lspconfig',
+-- 		'mfussenegger/nvim-dap',
+-- 		{
+-- 			'JavaHello/spring-boot.nvim',
+-- 			commit = '218c0c26c14d99feca778e4d13f5ec3e8b1b60f0',
+-- 		},
+-- 		{
+-- 			'williamboman/mason.nvim',
+-- 			opts = {
+-- 				registries = {
+-- 					'github:nvim-java/mason-registry',
+-- 					'github:mason-org/mason-registry',
+-- 				},
+-- 			},
+-- 		},
+-- 	},
+--   config = function()
+--       require('plugins.nvim-java')
+--   end
+-- },
 {
     'frazrepo/vim-rainbow'
 },
@@ -87,6 +191,16 @@ require('lazy').setup({
     config = function()
       require('plugins.obsidian')
     end,
+},
+{
+  "whonore/Coqtail"
+},
+{
+  "tadmccorkle/markdown.nvim",
+  ft = "markdown", -- or 'event = "VeryLazy"'
+  opts = {
+    -- configuration here or empty for defaults
+  },
 },
 {
   'stevearc/aerial.nvim',
@@ -128,6 +242,9 @@ require('lazy').setup({
   },
   { "Mofiqul/vscode.nvim" },
   { "mellow-theme/mellow.nvim" },
+  { "EdenEast/nightfox.nvim" },  
+  { "Mofiqul/dracula.nvim" },  
+  { "rose-pine/neovim", name = "rose-pine" },
   {
     -- nightfly
     'bluz71/vim-nightfly-colors',
@@ -143,21 +260,56 @@ require('lazy').setup({
   { "bluz71/vim-moonfly-colors", name = "moonfly", lazy = false, priority = 1000 },
   { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
   -- Configuration for nvim-tree
+{
+  'kyazdani42/nvim-tree.lua',
+  dependencies = { 'kyazdani42/nvim-web-devicons' },
+  config = function()
+    require('nvim-tree').setup {
+      hijack_netrw = true,           -- Replaces netrw with nvim-tree, optional
+      sync_root_with_cwd = false,    -- Prevents syncing with the current directory automatically
+      respect_buf_cwd = true,        -- Enables respecting buffer directory when switching files
+      actions = {
+        open_file = {
+          quit_on_open = true,       -- Closes the tree when opening a file
+        },
+      },
+      renderer = {
+        icons = {
+          glyphs = {
+            default = "",
+            symlink = "",
+            folder = {
+              arrow_open = "",
+              arrow_closed = "",
+              default = "",
+              open = "",
+              empty = "",
+              empty_open = "",
+              symlink = "",
+              symlink_open = "",
+            },
+            git = {
+              unstaged = "✗",
+              staged = "✓",
+              unmerged = "",
+              renamed = "➜",
+              untracked = "★",
+              deleted = "",
+              ignored = "◌",
+            },
+          },
+        },
+      },
+    }
+  end
+},
   {
-    'kyazdani42/nvim-tree.lua',
-    requires = {
-      {
-        'kyazdani42/nvim-web-devicons',
-        config = function()
-          require('plugins.nvim-web-devicons')  -- Load nvim-web-devicons configuration from separate file
-        end
-      }
-    },
-    config = function()
-      require('plugins.nvim-tree')  -- Load nvim-tree configuration from separate file
-    end
+    "L3MON4D3/LuaSnip",
+    -- follow latest release.
+    version = "v2.*", -- Replace <CurrentMajor> by the latest released major (first number of latest release)
+    -- install jsregexp (optional!).
+    build = "make install_jsregexp"
   },
-
   {
     -- Autocompletion
     'hrsh7th/nvim-cmp',
@@ -175,7 +327,7 @@ require('lazy').setup({
   },
 
     -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim', opts = {} },
+  -- { 'folke/which-key.nvim', opts = {} },
 
   { 'christoomey/vim-tmux-navigator'},
 
@@ -186,21 +338,31 @@ require('lazy').setup({
     end
   },
 
-  {
-    'romgrk/barbar.nvim',
-    dependencies = {
-      'lewis6991/gitsigns.nvim', -- OPTIONAL: for git status
-      'nvim-tree/nvim-web-devicons', -- OPTIONAL: for file icons
-    },
-    init = function() vim.g.barbar_auto_setup = false end,
-    opts = {
-      -- lazy.nvim will automatically call setup for you. put your options here, anything missing will use the default:
-      -- animation = true,
-      -- insert_at_start = true,
-      -- …etc.
-    },
-    version = '^1.0.0', -- optional: only update when a new 1.x version is released
+{
+  'romgrk/barbar.nvim',
+  dependencies = {
+    'lewis6991/gitsigns.nvim', -- OPTIONAL: for git status
+    'nvim-tree/nvim-web-devicons', -- OPTIONAL: for file icons
   },
+  init = function()
+    vim.g.barbar_auto_setup = false
+  end,
+  opts = {
+    icons = {
+      enabled = true, -- Enable icons
+      separator = {
+        left = '▎', -- Left separator icon
+        right = '▎' -- Right separator icon
+      },
+      filetype = {
+        custom_colors = false, -- Optional: enables filetype colors
+      },
+    },
+    -- You can add any other options you'd like here
+    -- Other options previously in your setup
+  },
+  version = '^1.0.0', -- optional: only update when a new 1.x version is released
+},
 
   {
     'nvim-lualine/lualine.nvim',
@@ -287,7 +449,7 @@ require('lazy').setup({
       end
 
     local projects = {
-        { path = "~/Documents/main", desc = "main", key = "1" },
+        { path = "~/main", desc = "main", key = "1" },
         { path = "~/.config/nvim", desc = "nvim config", key = "2" },
         -- Add more projects as needed
     }
@@ -437,16 +599,65 @@ local on_attach = function(_, bufnr)
   end, { desc = 'Format current buffer with LSP' })
 end
 
--- document existing key chains
-require('which-key').register {
-  ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
-  ['<leader>d'] = { name = '[D]ocument', _ = 'which_key_ignore' },
-  ['<leader>g'] = { name = '[G]it', _ = 'which_key_ignore' },
-  -- ['<leader>h'] = { name = 'More git', _ = 'which_key_ignore' },
-  ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
-  ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
-  ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
-}
+-- -- document existing key chains
+-- require('which-key').register {
+--
+--     -- { "<leader>c", group = "[C]ode" },
+--     -- { "<leader>c_", hidden = true },
+--     -- { "<leader>d", group = "[D]ocument" },
+--     -- { "<leader>d_", hidden = true },
+--     -- { "<leader>g", group = "[G]it" },
+--     -- { "<leader>g_", hidden = true },
+--     -- { "<leader>r", group = "[R]ename" },
+--     -- { "<leader>r_", hidden = true },
+--     -- { "<leader>s", group = "[S]earch" },
+--     -- { "<leader>s_", hidden = true },
+--     -- { "<leader>w", group = "[W]orkspace" },
+--     -- { "<leader>w_", hidden = true },
+--     -- { "", group = "[C]ode" },
+--     -- { "", group = "[S]earch" },
+--     -- { "", desc = "<leader>r_", hidden = true },
+--     -- { "", desc = "<leader>s_", hidden = true },
+--     -- { "", group = "[W]orkspace" },
+--     -- { "", group = "[R]ename" },
+--     -- { "", desc = "<leader>w_", hidden = true },
+--     -- { "", group = "[G]it" },
+--     -- { "", desc = "<leader>g_", hidden = true },
+--     -- { "", group = "[D]ocument" },
+--     -- { "", desc = "<leader>c_", hidden = true },
+--     -- { "", desc = "<leader>d_", hidden = true },
+--     -- { "<leader>c", group = "[C]ode" },
+--     -- { "<leader>c_", hidden = true },
+--     -- { "<leader>d", group = "[D]ocument" },
+--     -- { "<leader>d_", hidden = true },
+--     -- { "<leader>g", group = "[G]it" },
+--     -- { "<leader>g_", hidden = true },
+--     -- { "<leader>r", group = "[R]ename" },
+--     -- { "<leader>r_", hidden = true },
+--     -- { "<leader>s", group = "[S]earch" },
+--     -- { "<leader>s_", hidden = true },
+--     -- { "<leader>w", group = "[W]orkspace" },
+--     -- { "<leader>w_", hidden = true },
+--     -- {
+--     --   mode = { "n", "n" },
+--     --   { "", desc = "<leader>g_", hidden = true },
+--     --   { "", desc = "<leader>c_", hidden = true },
+--     --   { "", desc = "<leader>d_", hidden = true },
+--     --   { "", desc = "<leader>w_", hidden = true },
+--     --   { "", desc = "<leader>s_", hidden = true },
+--     --   { "", desc = "<leader>r_", hidden = true },
+--     -- },
+--     -- {
+--     --   mode = { "n", "n", "n" },
+--     --   { "", group = "[C]ode" },
+--     --   { "", group = "[D]ocument" },
+--     --   { "", group = "[R]ename" },
+--     --   { "", group = "[W]orkspace" },
+--     --   { "", group = "[S]earch" },
+--     --   { "", group = "[G]it" },
+--     -- },
+--     -- { "", desc = "", hidden = true, mode = { "n", "n", "n", "n", "n", "n" } },
+-- }
 
 -- mason-lspconfig requires that these setup functions are called in this order
 -- before setting up the servers.
@@ -504,7 +715,10 @@ mason_lspconfig.setup_handlers {
 
 require('plugins.cmp')
 
-vim.cmd('syntax on')
+-- vim.cmd('syntax on')
+-- vim.cmd('syntax on')
+vim.cmd('syntax spell toplevel')  -- Disable syntax-based spell checking
+vim.opt.spell = false  -- Ensure global spell checking is off
 vim.cmd('filetype plugin indent on')
 -- vim.cmd('colorscheme desert')
 

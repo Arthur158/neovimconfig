@@ -2,20 +2,38 @@
 -- See `:help vim.keymap.set()`
 vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 
+-- Mapping J to :CoqNext (step to the next Coq statement)
+vim.api.nvim_set_keymap('n', ',', ':CoqNext<CR>:CoqJumpToEnd<CR>', { noremap = true, silent = true })
+
+-- Mapping K to :CoqUndo (undo the last Coq statement)
+vim.api.nvim_set_keymap('n', 'm', ':CoqUndo<CR>:CoqJumpToEnd<CR>', { noremap = true, silent = true })
+-- vim.api.nvim_set_keymap('n', '"_dd', '<leader>d', { noremap = true, silent = true })
+
+
 -- Remap for dealing with word wrap
 vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
 -- vim.api.nvim_set_keymap('i', 'kj', '<ESC>', {noremap = true, silent = true})
 
 -- Diagnostic keymaps
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
-vim.keymap.set('n', '<leader>di', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostics list' })
+vim.keymap.set('n', '[d', function()
+    vim.diagnostic.goto_prev({ severity = { min = vim.diagnostic.severity.WARN } })
+end, { desc = 'Go to previous diagnostic warning/error' })
+
+vim.keymap.set('n', ']d', function()
+    vim.diagnostic.goto_next({ severity = { min = vim.diagnostic.severity.WARN } })
+end, { desc = 'Go to next diagnostic warning/error' })
+vim.keymap.set('n', '<leader>di', function()
+    vim.diagnostic.open_float({ severity = { min = vim.diagnostic.severity.WARN } })
+end, { desc = 'Open floating diagnostic message (warnings & errors only)' })
+
+vim.keymap.set('n', '<leader>q', function()
+    vim.diagnostic.setloclist({ severity = { min = vim.diagnostic.severity.WARN } })
+end, { desc = 'Open diagnostics list (warnings & errors only)' })
 
 -- keymaps for nv tree
 vim.keymap.set('n', '<C-n>', ':NvimTreeToggle<CR>', { desc = 'Toggled tree'})
-vim.keymap.set('n', '<leader>e', ':NvimTreeFocus<CR>', { noremap = true, silent = true })
+-- vim.keymap.set('n', '<leader>e', ':NvimTreeFocus<CR>', { noremap = true, silent = true })
 
 -- kemaps for a more confortable use of insert mode
 vim.keymap.set('n', '<C-z>', 'u', { noremap = true, silent = true })
@@ -141,4 +159,3 @@ end
 
 vim.api.nvim_set_keymap('n', '<leader>v', ':lua ToggleWrap()<CR>', {noremap = true, silent = true})
 
-vim.keymap.set("n", "<C-o>",":ObsidianQuickSwitch<CR>")
