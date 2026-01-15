@@ -16,6 +16,22 @@ vim.api.nvim_create_autocmd({ "BufEnter", "CursorHold", "CursorHoldI", "FocusGai
   pattern = { "*" },
 })
 
+vim.api.nvim_create_autocmd("UIEnter", {
+  once = true,
+  callback = function()
+    -- Check startup arguments
+    for _, arg in ipairs(vim.fn.argv()) do
+      if vim.fn.isdirectory(arg) == 1 then
+        -- Delay slightly to avoid race with plugins
+        vim.schedule(function()
+          require("telescope.builtin").find_files()
+        end)
+        return
+      end
+    end
+  end,
+})
+
 vim.diagnostic.config({
     virtual_text = {
         severity = { min = vim.diagnostic.severity.WARN }, -- Hide hints & info

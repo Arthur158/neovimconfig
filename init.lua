@@ -76,6 +76,11 @@ require('lazy').setup({
       "nvim-treesitter/nvim-treesitter",
     },
   },
+  {
+  "RRethy/vim-illuminate",
+  event = "CursorHold",
+  },
+
   -- {
   --   'nvim-telescope/telescope-frecency.nvim',
   --   requires = {'tami5/sqlite.lua'},
@@ -83,21 +88,37 @@ require('lazy').setup({
   --     require('telescope').load_extension('frecency')
   --   end
   -- },
-{
-  "derekelkins/agda-vim",
-  lazy = false,  -- Load immediately
-},
-{
-  'isovector/cornelis',
-  name = 'cornelis',
-  ft = 'agda',
-  build = 'stack install',
-  dependencies = {'neovimhaskell/nvim-hs.vim', 'kana/vim-textobj-user'},
-  version = '*',
-  config = function()
-    require("plugins.cornelis")
-  end,
-},
+-- {
+--   "derekelkins/agda-vim",
+--   lazy = false,  -- Load immediately
+-- },
+-- {
+--   "ashinkarov/nvim-agda",
+--   lazy = false,  -- Load immediately for debugging
+--   config = function()
+--     -- Enable debug mode
+--     vim.g.nvim_agda_settings = {
+--       agda = "/usr/bin/agda",  -- Update this path!
+--       agda_args = {},
+--       debug_p = true  -- Turn on debugging
+--     }
+--     
+--     -- Print confirmation
+--     print("nvim-agda loaded!")
+--     print("Agda path: " .. (vim.g.nvim_agda_settings.agda or "not set"))
+--   end,
+-- },
+-- {
+--   'isovector/cornelis',
+--   name = 'cornelis',
+--   ft = 'agda',
+--   build = 'stack install',
+--   dependencies = {'neovimhaskell/nvim-hs.vim', 'kana/vim-textobj-user'},
+--   version = '*',
+--   config = function()
+--     require("plugins.cornelis")
+--   end,
+-- },
   -- {
   --   'neovimhaskell/haskell-vim',
   --   ft = { 'haskell' },
@@ -327,7 +348,7 @@ require('lazy').setup({
   },
 
     -- Useful plugin to show you pending keybinds.
-  -- { 'folke/which-key.nvim', opts = {} },
+  { 'folke/which-key.nvim', opts = {} },
 
   { 'christoomey/vim-tmux-navigator'},
 
@@ -556,7 +577,7 @@ vim.api.nvim_create_user_command('LiveGrepGitRoot', live_grep_git_root, {})
 
 -- [[ Configure LSP ]]
 --  This function gets run when an LSP connects to a particular buffer.
-local on_attach = function(_, bufnr)
+local on_attach = function(client, bufnr)
   -- NOTE: Remember that lua is a real programming language, and as such it is possible
   -- to define small helper and utility functions so you don't have to repeat yourself
   -- many times.
@@ -568,13 +589,15 @@ local on_attach = function(_, bufnr)
       desc = 'LSP: ' .. desc
     end
 
-    vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
+    vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc, remap = true })
   end
 
   nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
   nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
 
+  -- nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
   nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+  -- nmap('gd', "<cmd>Telescope lsp_definitions<CR>", '[G]oto [D]efinition')
   nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
   nmap('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
   nmap('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
@@ -582,7 +605,7 @@ local on_attach = function(_, bufnr)
   nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
 
   -- See `:help K` for why this keymap
-  nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
+  -- nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
   nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
 
   -- Lesser used LSP functionality
@@ -688,6 +711,7 @@ local servers = {
   },
 }
 
+
 -- Setup neovim lua configuration
 require('neodev').setup()
 
@@ -700,18 +724,28 @@ local mason_lspconfig = require 'mason-lspconfig'
 
 mason_lspconfig.setup {
   ensure_installed = vim.tbl_keys(servers),
+  handlers = {
+    function(server_name)
+      require('lspconfig')[server_name].setup {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = servers[server_name],
+        filetypes = (servers[server_name] or {}).filetypes,
+      }
+    end,
+  },
 }
 
-mason_lspconfig.setup_handlers {
-  function(server_name)
-    require('lspconfig')[server_name].setup {
-      capabilities = capabilities,
-      on_attach = on_attach,
-      settings = servers[server_name],
-      filetypes = (servers[server_name] or {}).filetypes,
-    }
-  end,
-}
+-- mason_lspconfig.setup_handlers {
+--   function(server_name)
+--     require('lspconfig')[server_name].setup {
+--       capabilities = capabilities,
+--       on_attach = on_attach,
+--       settings = servers[server_name],
+--       filetypes = (servers[server_name] or {}).filetypes,
+--     }
+--   end,
+-- }
 
 require('plugins.cmp')
 
