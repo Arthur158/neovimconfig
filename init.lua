@@ -23,33 +23,162 @@ vim.opt.rtp:prepend(lazypath)
 -- Load the lazy.nvim setup
 require('lazy').setup({
 
-  -- NOTE: First, some plugins that don't require any configuration
 
-  -- Git related plugins
   'tpope/vim-fugitive',
+  'mbbill/undotree',
   'tpope/vim-rhubarb',
   'tpope/vim-surround',
-
-  -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
-
--- NOTE: This is where your plugins related to LSP can be installed.
-  --  The configuration is done below. Search for lspconfig to find it below.
+  'ghassan0/telescope-glyph.nvim',
   {
-    -- LSP Configuration & Plugins
+    "scalameta/nvim-metals",
+    ft = { "scala", "sbt", "java" },
+    opts = function()
+      local metals_config = require("metals").bare_config()
+      
+      -- Use the same on_attach function from your nvim-lspconfig setup
+      metals_config.on_attach = function(client, bufnr)
+        -- Reuse your existing LSP keybindings
+        local nmap = function(keys, func, desc)
+          if desc then
+            desc = 'LSP: ' .. desc
+          end
+          vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc, remap = true })
+        end
+
+        nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+        nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+        nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+        nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+        nmap('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+        nmap('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
+        nmap('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+        nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+        nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
+        nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
+        nmap('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+        
+        -- Metals-specific keybindings
+        nmap('<leader>mc', function() require('metals').commands() end, '[M]etals [C]ommands')
+        nmap('<leader>mi', function() require('metals').organize_imports() end, '[M]etals [I]mports')
+      end
+
+      -- Use the same capabilities from your nvim-lspconfig
+      metals_config.capabilities = require('cmp_nvim_lsp').default_capabilities(
+        vim.lsp.protocol.make_client_capabilities()
+      )
+
+      -- Metals-specific settings
+      metals_config.settings = {
+        showImplicitArguments = true,
+        showInferredType = true,
+        excludedPackages = { "akka.actor.typed.javadsl", "com.github.swagger.akka.javadsl" },
+      }
+
+      return metals_config
+    end,
+    config = function(self, metals_config)
+      local nvim_metals_group = vim.api.nvim_create_augroup("nvim-metals", { clear = true })
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = self.ft,
+        callback = function()
+          require("metals").initialize_or_attach(metals_config)
+        end,
+        group = nvim_metals_group,
+      })
+    end
+  },
+  {
+    "ThePrimeagen/harpoon",
+    branch = "harpoon2",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+      require('plugins.harpoon')
+    end,
+  },
+  {
     'neovim/nvim-lspconfig',
     dependencies = {
-      -- Automatically install LSPs to stdpath for neovim
       'williamboman/mason.nvim',
       'williamboman/mason-lspconfig.nvim',
-
-      -- Useful status updates for LSP
-      -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
       { 'j-hui/fidget.nvim', opts = {} },
 
-      -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
     },
+    config = function()
+      local on_attach = function(client, bufnr)
+        local nmap = function(keys, func, desc)
+          if desc then
+            desc = 'LSP: ' .. desc
+          end
+
+          vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc, remap = true })
+        end
+
+        nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+        nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+
+        -- nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+        nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+        -- nmap('gd', "<cmd>Telescope lsp_definitions<CR>", '[G]oto [D]efinition')
+        nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+        nmap('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+        nmap('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
+        nmap('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+        nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+
+        -- See `:help K` for why this keymap
+        nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
+        nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
+
+        -- Lesser used LSP functionality
+        nmap('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+        nmap('<leader>wa', vim.lsp.buf.add_workspace_folder, '[W]orkspace [A]dd Folder')
+        nmap('<leader>wr', vim.lsp.buf.remove_workspace_folder, '[W]orkspace [R]emove Folder')
+        nmap('<leader>wl', function()
+          print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+        end, '[W]orkspace [L]ist Folders')
+
+        vim.api.nvim_buf_create_user_command(bufnr, 'Format', function(_)
+          vim.lsp.buf.format()
+        end, { desc = 'Format current buffer with LSP' })
+      end
+
+      require('mason').setup()
+      require('mason-lspconfig').setup()
+
+      local servers = {
+        gopls = {},
+        hls = {},
+        ocamllsp = {},
+        -- als = {},
+        lua_ls = {
+          Lua = {
+            workspace = { checkThirdParty = false },
+            telemetry = { enable = false },
+          },
+        },
+      }
+
+      require('neodev').setup()
+      local capabilities = vim.lsp.protocol.make_client_capabilities()
+      capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
+
+      local mason_lspconfig = require 'mason-lspconfig'
+
+      mason_lspconfig.setup {
+        ensure_installed = vim.tbl_keys(servers),
+      }
+      for _, server_name in ipairs(vim.tbl_keys(servers)) do
+        vim.lsp.config(server_name, {
+          capabilities = capabilities,
+          on_attach = on_attach,
+          settings = servers[server_name],
+          filetypes = (servers[server_name] or {}).filetypes,
+        })
+      end
+
+    end
   },
   {
     "azratul/live-share.nvim",
@@ -63,11 +192,11 @@ require('lazy').setup({
       })
     end
   },
-  -- {
-  -- 'mrcjkb/haskell-tools.nvim',
-  --   version = '^5', -- Recommended
-  --   lazy = false, -- This plugin is already lazy
-  -- },
+  {
+  'mrcjkb/haskell-tools.nvim',
+    version = '^5', -- Recommended
+    lazy = false, -- This plugin is already lazy
+  },
   {
     "olimorris/codecompanion.nvim",
     opts = {},
@@ -75,6 +204,9 @@ require('lazy').setup({
       "nvim-lua/plenary.nvim",
       "nvim-treesitter/nvim-treesitter",
     },
+    config = function ()
+      require('plugins.codecompanion')
+    end
   },
   {
   "RRethy/vim-illuminate",
@@ -88,37 +220,17 @@ require('lazy').setup({
   --     require('telescope').load_extension('frecency')
   --   end
   -- },
--- {
---   "derekelkins/agda-vim",
---   lazy = false,  -- Load immediately
--- },
--- {
---   "ashinkarov/nvim-agda",
---   lazy = false,  -- Load immediately for debugging
---   config = function()
---     -- Enable debug mode
---     vim.g.nvim_agda_settings = {
---       agda = "/usr/bin/agda",  -- Update this path!
---       agda_args = {},
---       debug_p = true  -- Turn on debugging
---     }
---     
---     -- Print confirmation
---     print("nvim-agda loaded!")
---     print("Agda path: " .. (vim.g.nvim_agda_settings.agda or "not set"))
---   end,
--- },
--- {
---   'isovector/cornelis',
---   name = 'cornelis',
---   ft = 'agda',
---   build = 'stack install',
---   dependencies = {'neovimhaskell/nvim-hs.vim', 'kana/vim-textobj-user'},
---   version = '*',
---   config = function()
---     require("plugins.cornelis")
---   end,
--- },
+  {
+    'isovector/cornelis',
+    name = 'cornelis',
+    ft = 'agda',
+    build = 'stack install',
+    dependencies = {'neovimhaskell/nvim-hs.vim', 'kana/vim-textobj-user'},
+    version = '*',
+    config = function()
+      require("plugins.cornelis")
+    end,
+  },
   -- {
   --   'neovimhaskell/haskell-vim',
   --   ft = { 'haskell' },
@@ -126,49 +238,18 @@ require('lazy').setup({
   --     -- Plugin-specific configuration
   --   end
   -- },
-  -- {
-  --   "scalameta/nvim-metals",
-  --   dependencies = {
-  --     "nvim-lua/plenary.nvim",
-  --   },
-  --   ft = { "scala", "sbt", "java" },
-  --   opts = function()
-  --     local metals_config = require("metals").bare_config()
-  --     metals_config.on_attach = function(client, bufnr)
-  --       -- your on_attach function
-  --     end
-  --
-  --     return metals_config
-  --   end,
-  --   config = function(self, metals_config)
-  --     local nvim_metals_group = vim.api.nvim_create_augroup("nvim-metals", { clear = true })
-  --     vim.api.nvim_create_autocmd("FileType", {
-  --       pattern = self.ft,
-  --       callback = function()
-  --         require("metals").initialize_or_attach(metals_config)
-  --       end,
-  --       group = nvim_metals_group,
-  --     })
-  --   end
-  -- },
--- {
---   'untitled-ai/jupyter_ascending.vim',
---   config = function()
---     require('jupyter_ascending').setup()
---   end
--- },
-{
-  'voldikss/vim-floaterm',
-  config = function()
-    require('plugins.floaterm')  -- Load floaterm configuration from a separate file
-  end
-},
-{
-  'kyazdani42/nvim-web-devicons',
-  config = function()
-    require('nvim-web-devicons').setup { default = true }
-  end
-},
+  {
+    'voldikss/vim-floaterm',
+    config = function()
+      require('plugins.floaterm')  -- Load floaterm configuration from a separate file
+    end
+  },
+  {
+    'kyazdani42/nvim-web-devicons',
+    config = function()
+      require('nvim-web-devicons').setup { default = true }
+    end
+  },
 -- {
 -- 	'nvim-java/nvim-java',
 -- 	dependencies = {
@@ -198,43 +279,43 @@ require('lazy').setup({
 --       require('plugins.nvim-java')
 --   end
 -- },
-{
-    'frazrepo/vim-rainbow'
-},
-{
-    "epwalsh/obsidian.nvim",
-    version = "*",
-    lazy = true,
-    ft = "markdown",
+  {
+      'frazrepo/vim-rainbow'
+  },
+  {
+      "epwalsh/obsidian.nvim",
+      version = "*",
+      lazy = true,
+      ft = "markdown",
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+      },
+      config = function()
+        require('plugins.obsidian')
+      end,
+  },
+  {
+    "whonore/Coqtail"
+  },
+  {
+    "tadmccorkle/markdown.nvim",
+    ft = "markdown", -- or 'event = "VeryLazy"'
+    opts = {
+      -- configuration here or empty for defaults
+    },
+  },
+  {
+    'stevearc/aerial.nvim',
+    opts = {},
+    -- Optional dependencies
     dependencies = {
-      "nvim-lua/plenary.nvim",
+       "nvim-treesitter/nvim-treesitter",
+       "nvim-tree/nvim-web-devicons"
     },
     config = function()
-      require('plugins.obsidian')
+      require('plugins.aerial')  -- Load aerial configuration from separate file
     end,
-},
-{
-  "whonore/Coqtail"
-},
-{
-  "tadmccorkle/markdown.nvim",
-  ft = "markdown", -- or 'event = "VeryLazy"'
-  opts = {
-    -- configuration here or empty for defaults
   },
-},
-{
-  'stevearc/aerial.nvim',
-  opts = {},
-  -- Optional dependencies
-  dependencies = {
-     "nvim-treesitter/nvim-treesitter",
-     "nvim-tree/nvim-web-devicons"
-  },
-  config = function()
-    require('plugins.aerial')  -- Load aerial configuration from separate file
-  end,
-},
 
   {
     "zbirenbaum/copilot.lua",
@@ -267,7 +348,6 @@ require('lazy').setup({
   { "Mofiqul/dracula.nvim" },  
   { "rose-pine/neovim", name = "rose-pine" },
   {
-    -- nightfly
     'bluz71/vim-nightfly-colors',
     config = function()
       vim.cmd.colorscheme "nightfly"
@@ -359,31 +439,31 @@ require('lazy').setup({
     end
   },
 
-{
-  'romgrk/barbar.nvim',
-  dependencies = {
-    'lewis6991/gitsigns.nvim', -- OPTIONAL: for git status
-    'nvim-tree/nvim-web-devicons', -- OPTIONAL: for file icons
-  },
-  init = function()
-    vim.g.barbar_auto_setup = false
-  end,
-  opts = {
-    icons = {
-      enabled = true, -- Enable icons
-      separator = {
-        left = '▎', -- Left separator icon
-        right = '▎' -- Right separator icon
-      },
-      filetype = {
-        custom_colors = false, -- Optional: enables filetype colors
-      },
-    },
-    -- You can add any other options you'd like here
-    -- Other options previously in your setup
-  },
-  version = '^1.0.0', -- optional: only update when a new 1.x version is released
-},
+  -- {
+  --   'romgrk/barbar.nvim',
+  --   dependencies = {
+  --     'lewis6991/gitsigns.nvim', -- OPTIONAL: for git status
+  --     'nvim-tree/nvim-web-devicons', -- OPTIONAL: for file icons
+  --   },
+  --   init = function()
+  --     vim.g.barbar_auto_setup = false
+  --   end,
+  --   opts = {
+  --     icons = {
+  --       enabled = true, -- Enable icons
+  --       separator = {
+  --         left = '▎', -- Left separator icon
+  --         right = '▎' -- Right separator icon
+  --       },
+  --       filetype = {
+  --         custom_colors = false, -- Optional: enables filetype colors
+  --       },
+  --     },
+  --     -- You can add any other options you'd like here
+  --     -- Other options previously in your setup
+  --   },
+  --   version = '^1.0.0', -- optional: only update when a new 1.x version is released
+  -- },
 
   {
     'nvim-lualine/lualine.nvim',
@@ -574,178 +654,6 @@ local function live_grep_git_root()
 end
 
 vim.api.nvim_create_user_command('LiveGrepGitRoot', live_grep_git_root, {})
-
--- [[ Configure LSP ]]
---  This function gets run when an LSP connects to a particular buffer.
-local on_attach = function(client, bufnr)
-  -- NOTE: Remember that lua is a real programming language, and as such it is possible
-  -- to define small helper and utility functions so you don't have to repeat yourself
-  -- many times.
-  --
-  -- In this case, we create a function that lets us more easily define mappings specific
-  -- for LSP related items. It sets the mode, buffer and description for us each time.
-  local nmap = function(keys, func, desc)
-    if desc then
-      desc = 'LSP: ' .. desc
-    end
-
-    vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc, remap = true })
-  end
-
-  nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-  nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
-
-  -- nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
-  nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
-  -- nmap('gd', "<cmd>Telescope lsp_definitions<CR>", '[G]oto [D]efinition')
-  nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
-  nmap('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
-  nmap('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
-  nmap('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
-  nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
-
-  -- See `:help K` for why this keymap
-  -- nmap('K', vim.lsp.buf.hover, 'Hover Documentation')
-  nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
-
-  -- Lesser used LSP functionality
-  nmap('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
-  nmap('<leader>wa', vim.lsp.buf.add_workspace_folder, '[W]orkspace [A]dd Folder')
-  nmap('<leader>wr', vim.lsp.buf.remove_workspace_folder, '[W]orkspace [R]emove Folder')
-  nmap('<leader>wl', function()
-    print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
-  end, '[W]orkspace [L]ist Folders')
-
-  -- Create a command `:Format` local to the LSP buffer
-  vim.api.nvim_buf_create_user_command(bufnr, 'Format', function(_)
-    vim.lsp.buf.format()
-  end, { desc = 'Format current buffer with LSP' })
-end
-
--- -- document existing key chains
--- require('which-key').register {
---
---     -- { "<leader>c", group = "[C]ode" },
---     -- { "<leader>c_", hidden = true },
---     -- { "<leader>d", group = "[D]ocument" },
---     -- { "<leader>d_", hidden = true },
---     -- { "<leader>g", group = "[G]it" },
---     -- { "<leader>g_", hidden = true },
---     -- { "<leader>r", group = "[R]ename" },
---     -- { "<leader>r_", hidden = true },
---     -- { "<leader>s", group = "[S]earch" },
---     -- { "<leader>s_", hidden = true },
---     -- { "<leader>w", group = "[W]orkspace" },
---     -- { "<leader>w_", hidden = true },
---     -- { "", group = "[C]ode" },
---     -- { "", group = "[S]earch" },
---     -- { "", desc = "<leader>r_", hidden = true },
---     -- { "", desc = "<leader>s_", hidden = true },
---     -- { "", group = "[W]orkspace" },
---     -- { "", group = "[R]ename" },
---     -- { "", desc = "<leader>w_", hidden = true },
---     -- { "", group = "[G]it" },
---     -- { "", desc = "<leader>g_", hidden = true },
---     -- { "", group = "[D]ocument" },
---     -- { "", desc = "<leader>c_", hidden = true },
---     -- { "", desc = "<leader>d_", hidden = true },
---     -- { "<leader>c", group = "[C]ode" },
---     -- { "<leader>c_", hidden = true },
---     -- { "<leader>d", group = "[D]ocument" },
---     -- { "<leader>d_", hidden = true },
---     -- { "<leader>g", group = "[G]it" },
---     -- { "<leader>g_", hidden = true },
---     -- { "<leader>r", group = "[R]ename" },
---     -- { "<leader>r_", hidden = true },
---     -- { "<leader>s", group = "[S]earch" },
---     -- { "<leader>s_", hidden = true },
---     -- { "<leader>w", group = "[W]orkspace" },
---     -- { "<leader>w_", hidden = true },
---     -- {
---     --   mode = { "n", "n" },
---     --   { "", desc = "<leader>g_", hidden = true },
---     --   { "", desc = "<leader>c_", hidden = true },
---     --   { "", desc = "<leader>d_", hidden = true },
---     --   { "", desc = "<leader>w_", hidden = true },
---     --   { "", desc = "<leader>s_", hidden = true },
---     --   { "", desc = "<leader>r_", hidden = true },
---     -- },
---     -- {
---     --   mode = { "n", "n", "n" },
---     --   { "", group = "[C]ode" },
---     --   { "", group = "[D]ocument" },
---     --   { "", group = "[R]ename" },
---     --   { "", group = "[W]orkspace" },
---     --   { "", group = "[S]earch" },
---     --   { "", group = "[G]it" },
---     -- },
---     -- { "", desc = "", hidden = true, mode = { "n", "n", "n", "n", "n", "n" } },
--- }
-
--- mason-lspconfig requires that these setup functions are called in this order
--- before setting up the servers.
-require('mason').setup()
-require('mason-lspconfig').setup()
-
--- Enable the following language servers
---  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
---
---  Add any additional override configuration in the following tables. They will be passed to
---  the `settings` field of the server config. You must look up that documentation yourself.
---
---  If you want to override the default filetypes that your language server will attach to you can
---  define the property 'filetypes' to the map in question.
-local servers = {
-  -- clangd = {},
-  -- gopls = {},
-  -- pyright = {},
-  -- rust_analyzer = {},
-  -- tsserver = {},
-  -- html = { filetypes = { 'html', 'twig', 'hbs'} },
-
-  lua_ls = {
-    Lua = {
-      workspace = { checkThirdParty = false },
-      telemetry = { enable = false },
-    },
-  },
-}
-
-
--- Setup neovim lua configuration
-require('neodev').setup()
-
--- nvim-cmp supports additional completion capabilities, so broadcast that to servers
-local capabilities = vim.lsp.protocol.make_client_capabilities()
-capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
-
--- Ensure the servers above are installed
-local mason_lspconfig = require 'mason-lspconfig'
-
-mason_lspconfig.setup {
-  ensure_installed = vim.tbl_keys(servers),
-  handlers = {
-    function(server_name)
-      require('lspconfig')[server_name].setup {
-        capabilities = capabilities,
-        on_attach = on_attach,
-        settings = servers[server_name],
-        filetypes = (servers[server_name] or {}).filetypes,
-      }
-    end,
-  },
-}
-
--- mason_lspconfig.setup_handlers {
---   function(server_name)
---     require('lspconfig')[server_name].setup {
---       capabilities = capabilities,
---       on_attach = on_attach,
---       settings = servers[server_name],
---       filetypes = (servers[server_name] or {}).filetypes,
---     }
---   end,
--- }
 
 require('plugins.cmp')
 

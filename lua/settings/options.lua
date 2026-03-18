@@ -5,6 +5,21 @@
 vim.o.hlsearch = false
 vim.opt.spell = false
 
+vim.opt.tabstop = 4      -- how wide a tab looks
+vim.opt.shiftwidth = 4   -- how wide >> and auto-indent are
+vim.opt.expandtab = true -- use spaces instead of actual tab character
+
+vim.g.cornelis_agda_prefix = vim.NIL
+vim.lsp.handlers["window/showMessage"] = function(_, result, ctx)
+  -- Only show errors and warnings, ignore info messages
+  if result.type > 2 then  -- 1=Error, 2=Warning, 3=Info, 4=Log
+    return
+  end
+  vim.notify(result.message, result.type)
+end
+
+vim.opt.swapfile = false
+
 vim.o.background = "dark" -- or "light" for light mode
 vim.cmd([[colorscheme catppuccin-mocha]])
 
@@ -68,43 +83,43 @@ vim.api.nvim_create_autocmd("BufEnter", {
     end,
 })
 
-local function enforce_buffer_limit()
-  local max_buffers = 7
+-- local function enforce_buffer_limit()
+--   local max_buffers = 7
+--
+--   -- Sanitize: remove invalid buffers from access order
+--   for i = #buffer_access_order, 1, -1 do
+--     local b = buffer_access_order[i]
+--     if not vim.api.nvim_buf_is_valid(b) then
+--       table.remove(buffer_access_order, i)
+--     end
+--   end
+--
+--   if #buffer_access_order > max_buffers then
+--     -- LRU = first element
+--     local lru_bufnr = table.remove(buffer_access_order, 1)
+--
+--     -- Only delete if:
+--     --   - buffer is valid
+--     --   - buffer is listed (real file buffers only)
+--     --   - buffer is loaded
+--     if vim.api.nvim_buf_is_valid(lru_bufnr)
+--       and vim.api.nvim_buf_is_loaded(lru_bufnr)
+--       and vim.api.nvim_buf_get_option(lru_bufnr, "buflisted")
+--     then
+--       -- Safe deletion (avoid throwing errors inside autocommands)
+--       pcall(vim.api.nvim_buf_delete, lru_bufnr, { force = true })
+--     end
+--   end
+-- end
 
-  -- Sanitize: remove invalid buffers from access order
-  for i = #buffer_access_order, 1, -1 do
-    local b = buffer_access_order[i]
-    if not vim.api.nvim_buf_is_valid(b) then
-      table.remove(buffer_access_order, i)
-    end
-  end
-
-  if #buffer_access_order > max_buffers then
-    -- LRU = first element
-    local lru_bufnr = table.remove(buffer_access_order, 1)
-
-    -- Only delete if:
-    --   - buffer is valid
-    --   - buffer is listed (real file buffers only)
-    --   - buffer is loaded
-    if vim.api.nvim_buf_is_valid(lru_bufnr)
-      and vim.api.nvim_buf_is_loaded(lru_bufnr)
-      and vim.api.nvim_buf_get_option(lru_bufnr, "buflisted")
-    then
-      -- Safe deletion (avoid throwing errors inside autocommands)
-      pcall(vim.api.nvim_buf_delete, lru_bufnr, { force = true })
-    end
-  end
-end
-
--- Autocommand to track buffer access and enforce limit
-vim.api.nvim_create_autocmd("BufEnter", {
-  callback = function()
-    local bufnr = vim.fn.bufnr()
-    update_buffer_access(bufnr)
-    enforce_buffer_limit()
-  end,
-})
+-- -- Autocommand to track buffer access and enforce limit
+-- vim.api.nvim_create_autocmd("BufEnter", {
+--   callback = function()
+--     local bufnr = vim.fn.bufnr()
+--     update_buffer_access(bufnr)
+--     enforce_buffer_limit()
+--   end,
+-- })
 
 
 vim.api.nvim_buf_set_var(0, 'coqtail_coq_path', '~/.opam/4.14.1/bin')

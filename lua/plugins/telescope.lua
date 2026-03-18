@@ -1,5 +1,5 @@
 -- plugins/telescope.lua
-
+require('telescope').load_extension('glyph')
 require('telescope').setup {
   -- Your detailed telescope configuration
   -- For example, setting up pickers, defaults, extensions, etc.

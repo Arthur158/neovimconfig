@@ -58,8 +58,8 @@ vim.keymap.set('x', '<A-j>', ":move '>+1<CR>gv=gv", { noremap = true, silent = t
 -- vim.api.nvim_set_keymap('n', '<Space>x', ':if &modified | w | bd | else | bd | endif<CR>', { noremap = true, silent = true })
 
 -- Move to previous/next
-vim.keymap.set('n', '<S-Tab>', '<Cmd>BufferPrevious<CR>')
-vim.keymap.set('n', '<Tab>', '<Cmd>BufferNext<CR>')
+-- vim.keymap.set('n', '<S-Tab>', '<Cmd>BufferPrevious<CR>')
+-- vim.keymap.set('n', '<Tab>', '<Cmd>BufferNext<CR>')
 -- Re-order to previous/next
 vim.keymap.set('n', '<A-<>', '<Cmd>BufferMovePrevious<CR>')
 vim.keymap.set('n', '<A->>', '<Cmd>BufferMoveNext<CR>')
@@ -88,12 +88,15 @@ vim.keymap.set('n', '<C-w>', '<Cmd>BufferClose<CR>')
 
 --                 :BufferCloseBuffersRight
 -- Magic buffer-picking mode
-vim.keymap.set('n', '<C-p>', '<Cmd>BufferPick<CR>')
+-- vim.keymap.set('n', '<C-p>', '<Cmd>BufferPick<CR>')
 -- Sort automatically by...
-vim.keymap.set('n', '<Space>bb', '<Cmd>BufferOrderByBufferNumber<CR>')
+-- vim.keymap.set('n', '<Space>bb', '<Cmd>BufferOrderByBufferNumber<CR>')
 -- vim.keymap.set('n', '<Space>bd', '<Cmd>BufferOrderByDirectory<CR>')
 -- vim.keymap.set('n', '<Space>bl', '<Cmd>BufferOrderByLanguage<CR>')
 -- vim.keymap.set('n', '<Space>bw', '<Cmd>BufferOrderByWindowNumber<CR>')
+
+vim.keymap.set('n', '<C-p>', '\"*p')
+
 
 vim.api.nvim_set_keymap('x', '>', '>gv', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('x', '<', '<gv', { noremap = true, silent = true })

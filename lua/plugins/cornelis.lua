@@ -1,2 +1,5 @@
 vim.keymap.set("n", "<C-c><C-l>", "<cmd>CornelisLoad<CR>")
-vim.keymap.set("n", "<C-c><C-w>", "<cmd>CornelisWhyInScope<CR>")
+vim.keymap.set("n", "<C-c><C-k>", "<cmd>CornelisCloseInfoWindows<CR>")
+vim.keymap.set("n", "K", "<cmd>CornelisTypeContextInfer<CR>")
+vim.keymap.set("n", "gd", "<cmd>CornelisGoToDefinition<CR>")
+-- vim.keymap.set("n", "<C-c><C-w>", "<cmd>CornelisWhyInScope<CR>")
