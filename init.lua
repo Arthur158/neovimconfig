@@ -31,6 +31,24 @@ require('lazy').setup({
   'tpope/vim-sleuth',
   'ghassan0/telescope-glyph.nvim',
   {
+    'Julian/lean.nvim',
+    event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
+
+    dependencies = {
+      -- optional dependencies:
+
+      -- 'nvim-telescope/telescope.nvim', -- for Lean-specific pickers
+      -- 'andymass/vim-matchup',          -- for enhanced % motion behavior
+      -- 'andrewradev/switch.vim',        -- for switch support
+      -- 'tomtom/tcomment_vim',           -- for commenting
+    },
+
+    ---@type lean.Config
+    opts = { -- see the manual for full configuration options
+      mappings = true,
+    }
+  },
+  {
     "scalameta/nvim-metals",
     ft = { "scala", "sbt", "java" },
     opts = function()
@@ -158,6 +176,10 @@ require('lazy').setup({
             telemetry = { enable = false },
           },
         },
+        -- logo = {
+        --   cmd = { "java", "-jar", "/home/arthurj/github/logolsp/build/libs/logo-lsp.jar", "--stdio" },
+        --   filetypes = { "logo" },
+        -- }
       }
 
       require('neodev').setup()
@@ -218,6 +240,15 @@ require('lazy').setup({
   --   requires = {'tami5/sqlite.lua'},
   --   config = function()
   --     require('telescope').load_extension('frecency')
+  --   end
+  -- },
+  -- {
+  --   "lervag/vimtex",
+  --   lazy = false,     -- we don't want to lazy load VimTeX
+  --   -- tag = "v2.15", -- uncomment to pin to a specific release
+  --   init = function()
+  --     -- VimTeX configuration goes here, e.g.
+  --     vim.g.vimtex_view_method = "mupdf"
   --   end
   -- },
   {
@@ -304,18 +335,18 @@ require('lazy').setup({
       -- configuration here or empty for defaults
     },
   },
-  {
-    'stevearc/aerial.nvim',
-    opts = {},
-    -- Optional dependencies
-    dependencies = {
-       "nvim-treesitter/nvim-treesitter",
-       "nvim-tree/nvim-web-devicons"
-    },
-    config = function()
-      require('plugins.aerial')  -- Load aerial configuration from separate file
-    end,
-  },
+  -- {
+  --   'stevearc/aerial.nvim',
+  --   opts = {},
+  --   -- Optional dependencies
+  --   dependencies = {
+  --      "nvim-treesitter/nvim-treesitter",
+  --      "nvim-tree/nvim-web-devicons"
+  --   },
+  --   config = function()
+  --     require('plugins.aerial')  -- Load aerial configuration from separate file
+  --   end,
+  -- },
 
   {
     "zbirenbaum/copilot.lua",
@@ -487,7 +518,7 @@ require('lazy').setup({
   -- Fuzzy Finder (files, lsp, etc)
   {
     'nvim-telescope/telescope.nvim',
-    branch = '0.1.x',
+    branch = 'master',
     dependencies = {
       'nvim-lua/plenary.nvim',
       {
@@ -594,17 +625,32 @@ require('lazy').setup({
   {
     -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    tag = "v0.10.0",
+    -- branch = "main",
     dependencies = {
-      'nvim-treesitter/nvim-treesitter-textobjects',
+      -- 'nvim-treesitter/nvim-treesitter-textobjects',
     },
-    config = function()
-      require('plugins.treesitter')
-    end,
+    -- config = function()
+    --   require('plugins.treesitter')
+    -- end,
     build = ':TSUpdate',
   },
 
   -- ... (rest of your plugins)
 }, {})
+
+-- local lspconfig = require("lspconfig")
+-- local configs = require("lspconfig.configs")
+--
+-- if not configs.logo then
+--   configs.logo = {
+--     default_config = {
+--       cmd = { "java", "-jar", "/home/arthurj/github/logolsp/build/libs/logo-lsp.jar", "--stdio" },
+--       filetypes = { "logo" },
+--       root_dir = lspconfig.util.root_pattern(".git", "."),
+--     },
+--   }
+-- end
 
 -- Load general settings
 require('settings.options')
@@ -662,6 +708,11 @@ require('plugins.cmp')
 vim.cmd('syntax spell toplevel')  -- Disable syntax-based spell checking
 vim.opt.spell = false  -- Ensure global spell checking is off
 vim.cmd('filetype plugin indent on')
+vim.filetype.add({
+  extension = {
+    logo = "logo",
+  },
+})
 -- vim.cmd('colorscheme desert')
 
 -- The line beneath this is called `modeline`. See `:help modeline`
