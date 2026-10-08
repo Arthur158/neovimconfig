@@ -42,12 +42,32 @@ local function toggle_branch_review()
   vim.cmd('DiffviewOpen origin/trunk...HEAD --imply-local')
 end
 
+local function close_to_reviewed_file()
+  local view = require('diffview.lib').get_current_view()
+  if not view then
+    vim.notify('No Diffview is open', vim.log.levels.WARN)
+    return
+  end
+
+  if not view:infer_cur_file() then
+    vim.notify('No file is selected in Diffview', vim.log.levels.WARN)
+    return
+  end
+
+  actions.goto_file_edit()
+  view:close()
+end
+
 vim.keymap.set('n', '<leader>gh', toggle_file_history, {
   desc = '[G]it current file [H]istory toggle',
 })
 
 vim.keymap.set('n', '<leader>gj', toggle_branch_review, {
   desc = '[G]it branch review toggle',
+})
+
+vim.keymap.set('n', '<leader>gk', close_to_reviewed_file, {
+  desc = '[G]it close review at current file',
 })
 
 vim.keymap.set('n', '<leader>gq', '<cmd>DiffviewClose<CR>', {
