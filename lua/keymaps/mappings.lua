@@ -32,7 +32,10 @@ vim.keymap.set('n', '<leader>q', function()
 end, { desc = 'Open diagnostics list (warnings & errors only)' })
 
 -- keymaps for nv tree
-vim.keymap.set('n', '<C-n>', ':NvimTreeToggle<CR>', { desc = 'Toggled tree'})
+vim.keymap.set('n', '<C-n>', '<cmd>NvimTreeToggle<CR>', { desc = 'Toggle file tree' })
+vim.keymap.set('n', '<leader>N', '<cmd>NvimTreeFindFileToggle<CR>', {
+    desc = 'Toggle file tree at current file',
+})
 -- vim.keymap.set('n', '<leader>e', ':NvimTreeFocus<CR>', { noremap = true, silent = true })
 
 -- kemaps for a more confortable use of insert mode
@@ -44,9 +47,12 @@ vim.keymap.set('i', '<C-H>', '<C-w>', { noremap = true, silent = true })
 -- vim.api.nvim_set_keymap('n', '<leader>o', '<C-V>', { noremap = true })
 
 vim.keymap.set('n', '<A-Up>', ':m .-2<CR>', { noremap = true, silent = true })
-vim.keymap.set('n', '<A-k>', ':m .-2<CR>', { noremap = true, silent = true })
 vim.keymap.set('n', '<A-Down>', ':m .+1<CR>', { noremap = true, silent = true })
-vim.keymap.set('n', '<A-j>', ':m .+1<CR>', { noremap = true, silent = true })
+
+vim.keymap.set('n', '<A-h>', '7h', { noremap = true, silent = true, desc = 'Move 5 characters left' })
+vim.keymap.set('n', '<A-j>', '5j', { noremap = true, silent = true, desc = 'Move 5 lines down' })
+vim.keymap.set('n', '<A-k>', '5k', { noremap = true, silent = true, desc = 'Move 5 lines up' })
+vim.keymap.set('n', '<A-l>', '7l', { noremap = true, silent = true, desc = 'Move 5 characters right' })
 
 vim.keymap.set('x', '<A-Up>', ":move '<-2<CR>gv=gv", { noremap = true, silent = true })
 vim.keymap.set('x', '<A-k>', ":move '<-2<CR>gv=gv", { noremap = true, silent = true })
@@ -161,4 +167,3 @@ function ToggleWrap()
 end
 
 vim.api.nvim_set_keymap('n', '<leader>v', ':lua ToggleWrap()<CR>', {noremap = true, silent = true})
-

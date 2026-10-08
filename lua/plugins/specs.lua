@@ -35,7 +35,17 @@ return {
     dependencies = {
       'williamboman/mason.nvim',
       'williamboman/mason-lspconfig.nvim',
-      { 'j-hui/fidget.nvim', opts = {} },
+      {
+        'j-hui/fidget.nvim',
+        opts = {
+          progress = {
+            -- gopls reports workspace/package-loading failures as progress
+            -- updates. Keep real diagnostics, but do not pin that noisy
+            -- progress stream over unrelated buffers.
+            ignore = { 'gopls' },
+          },
+        },
+      },
 
       'folke/neodev.nvim',
     },
