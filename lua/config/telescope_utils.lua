@@ -3,6 +3,7 @@ local M = {}
 local nebo_repositories = {
   nebo = true,
   nebo2 = true,
+  nebo3 = true,
   neboreplica = true,
 }
 
