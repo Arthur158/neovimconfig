@@ -210,7 +210,12 @@ end
 local function prioritized_sorter(picker_name, repo_root, vpc_root)
   local config = require('telescope.config').values
   local file_picker = picker_name == 'find_files' or picker_name == 'git_files'
-  local sorter = (file_picker and config.file_sorter or config.generic_sorter)({})
+  local sorter
+  if picker_name == 'grep_in_files' then
+    sorter = require('telescope.sorters').empty()
+  else
+    sorter = (file_picker and config.file_sorter or config.generic_sorter)({})
+  end
   local score = sorter.scoring_function
   local changed_files = cached_git_changed_files(repo_root)
 
@@ -306,7 +311,8 @@ function M.options(opts, picker_name)
       if picker_name == 'find_files' then
         opts.find_command = vpc_first_find_command(opts) or opts.find_command
       end
-      if (picker_name == 'live_grep' or picker_name == 'grep_string') and not opts.grep_open_files then
+      if (picker_name == 'live_grep' or picker_name == 'grep_string' or picker_name == 'grep_in_files')
+        and not opts.grep_open_files then
         opts.vimgrep_arguments = vpc_first_vimgrep_arguments(opts) or opts.vimgrep_arguments
       end
       if not opts.sorter then
@@ -393,6 +399,185 @@ function M.find_files_by_extension()
   end
 
   require('telescope.builtin').find_files(opts)
+end
+
+local function filename_glob(filter)
+  if filter == '' then
+    return nil
+  end
+  if filter:find('[%*%?%[%]{}]') then
+    return filter
+  end
+  if filter:find('/', 1, true) then
+    return '**/*' .. filter .. '*'
+  end
+  return '*' .. filter .. '*'
+end
+
+function M.grep_in_files()
+  local finders = require('telescope.finders')
+  local make_entry = require('telescope.make_entry')
+  local pickers = require('telescope.pickers')
+  local sorters = require('telescope.sorters')
+  local telescope_config = require('telescope.config').values
+  local active_field = 'grep'
+  local grep_query = ''
+  local filename_filter = ''
+
+  local opts = M.options({}, 'grep_in_files')
+  local vimgrep_arguments = opts.vimgrep_arguments or telescope_config.vimgrep_arguments
+
+  local finder = finders.new_job(function(prompt)
+    if active_field == 'grep' then
+      grep_query = vim.trim(prompt or '')
+    else
+      filename_filter = vim.trim(prompt or '')
+    end
+    if grep_query == '' then
+      return nil
+    end
+
+    local arguments = vim.deepcopy(vimgrep_arguments)
+    local glob = filename_glob(filename_filter)
+    if glob then
+      vim.list_extend(arguments, { '--glob', glob })
+    end
+    vim.list_extend(arguments, { '--', grep_query })
+    return arguments
+  end, make_entry.gen_from_vimgrep(opts), nil, opts.cwd)
+
+  opts.prompt_title = 'Grep text (primary)  [Tab: file filter]'
+  opts.finder = finder
+  opts.previewer = telescope_config.grep_previewer(opts)
+  -- The finder performs both filters. A Telescope fuzzy sorter would interpret
+  -- the combined prompt as a third filter and incorrectly discard matches.
+  opts.sorter = opts.sorter or sorters.empty()
+  opts.push_cursor_on_edit = true
+  opts.attach_mappings = function(prompt_bufnr, map)
+    local action_state = require('telescope.actions.state')
+    local picker = action_state.get_current_picker(prompt_bufnr)
+    local other_bufnr = vim.api.nvim_create_buf(false, true)
+    local other_win
+    local saved_columns = { grep = 0, filename = 0 }
+    local group = vim.api.nvim_create_augroup('TelescopeGrepInFiles' .. prompt_bufnr, { clear = true })
+
+    vim.bo[other_bufnr].buftype = 'nofile'
+    vim.bo[other_bufnr].bufhidden = 'wipe'
+    vim.bo[other_bufnr].swapfile = false
+    vim.bo[other_bufnr].filetype = 'TelescopePrompt'
+
+    local function other_window_config()
+      local position = vim.api.nvim_win_get_position(picker.prompt_win)
+      local prompt_row, prompt_col = position[1], position[2]
+      local row
+      if prompt_row > math.floor(vim.o.lines / 2) then
+        row = math.max(0, prompt_row - 3)
+      else
+        row = math.min(vim.o.lines - 3, prompt_row + 2)
+      end
+      local col = math.max(0, prompt_col - 1)
+      local width = math.max(1, math.min(
+        vim.api.nvim_win_get_width(picker.prompt_win),
+        vim.o.columns - col - 2
+      ))
+      return {
+        relative = 'editor',
+        row = row,
+        col = col,
+        width = width,
+        height = 1,
+        style = 'minimal',
+        border = 'single',
+        title = ' File filter (optional) ',
+        title_pos = 'left',
+        zindex = 60,
+      }
+    end
+
+    other_win = vim.api.nvim_open_win(other_bufnr, false, other_window_config())
+    vim.wo[other_win].winhighlight = 'Normal:TelescopePromptNormal,FloatBorder:TelescopePromptBorder'
+
+    local function update_other_field()
+      local value = active_field == 'grep' and filename_filter or grep_query
+      local title = active_field == 'grep' and ' File filter (optional) ' or ' Grep text (primary) '
+      vim.bo[other_bufnr].modifiable = true
+      vim.api.nvim_buf_set_lines(other_bufnr, 0, -1, false, { value })
+      vim.bo[other_bufnr].modifiable = false
+      if vim.api.nvim_win_is_valid(other_win) then
+        local config = vim.api.nvim_win_get_config(other_win)
+        config.title = title
+        vim.api.nvim_win_set_config(other_win, config)
+      end
+    end
+
+    local function switch_field()
+      local was_insert = vim.api.nvim_get_mode().mode:sub(1, 1) == 'i'
+      local current = vim.trim(picker:_get_prompt())
+      local cursor = vim.api.nvim_win_get_cursor(picker.prompt_win)
+      if active_field == 'grep' then
+        grep_query = current
+        saved_columns.grep = cursor[2]
+        active_field = 'filename'
+        picker.prompt_title = 'File filter (editing)  [Tab: grep]'
+      else
+        filename_filter = current
+        saved_columns.filename = cursor[2]
+        active_field = 'grep'
+        picker.prompt_title = 'Grep text (primary)  [Tab: file filter]'
+      end
+
+      if picker.layout.prompt.border then
+        picker.layout.prompt.border:change_title(picker.prompt_title)
+      end
+      update_other_field()
+
+      local value = active_field == 'grep' and grep_query or filename_filter
+      picker:set_prompt(value)
+      local column = math.min(saved_columns[active_field], #value)
+      pcall(vim.api.nvim_win_set_cursor, picker.prompt_win, { 1, column })
+      if was_insert then
+        vim.defer_fn(function()
+          if vim.api.nvim_buf_is_valid(prompt_bufnr) and vim.api.nvim_get_current_buf() == prompt_bufnr then
+            vim.cmd.startinsert()
+          end
+        end, 10)
+      end
+    end
+
+    update_other_field()
+    map({ 'i', 'n' }, '<Tab>', switch_field)
+    map({ 'i', 'n' }, '<S-Tab>', switch_field)
+
+    vim.api.nvim_create_autocmd('VimResized', {
+      group = group,
+      callback = function()
+        if vim.api.nvim_win_is_valid(other_win) and vim.api.nvim_win_is_valid(picker.prompt_win) then
+          vim.api.nvim_win_set_config(other_win, other_window_config())
+        end
+      end,
+    })
+
+    vim.api.nvim_create_autocmd('BufWipeout', {
+      group = group,
+      buffer = prompt_bufnr,
+      once = true,
+      callback = function()
+        if other_win and vim.api.nvim_win_is_valid(other_win) then
+          pcall(vim.api.nvim_win_close, other_win, true)
+        end
+        if vim.api.nvim_buf_is_valid(other_bufnr) then
+          pcall(vim.api.nvim_buf_delete, other_bufnr, { force = true })
+        end
+        vim.schedule(function()
+          pcall(vim.api.nvim_del_augroup_by_id, group)
+        end)
+      end,
+    })
+
+    return true
+  end
+
+  pickers.new(opts):find()
 end
 
 function M.setup()

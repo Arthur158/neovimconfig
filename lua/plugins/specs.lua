@@ -301,12 +301,20 @@ return {
     'nvim-treesitter/nvim-treesitter',
     branch = "main",
     lazy = false,
+    build = ':TSUpdate',
     dependencies = {
       -- 'nvim-treesitter/nvim-treesitter-textobjects',
     },
-    -- config = function()
-    --   require('plugins.treesitter')
-    -- end,
+    config = function()
+      require('nvim-treesitter').install({ 'go' })
+
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = 'markdown',
+        callback = function(args)
+          vim.treesitter.start(args.buf, 'markdown')
+        end,
+      })
+    end,
   },
 
 }

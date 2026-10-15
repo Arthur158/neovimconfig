@@ -21,6 +21,7 @@ vim.keymap.set('n', '<leader>se', telescope_utils.find_files_by_extension, { des
 vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', telescope_utils.picker('grep_string'), { desc = '[S]earch current [W]ord' })
 vim.keymap.set('n', '<leader>g', telescope_utils.picker('live_grep'), { desc = '[S]earch by [G]rep' })
+vim.keymap.set('n', '<leader>gi', telescope_utils.grep_in_files, { desc = '[G]rep AND file name' })
 vim.keymap.set('n', '<leader>sg', telescope_utils.picker('live_grep'), { desc = '[S]earch by [G]rep' })
 vim.keymap.set('n', '<leader>sG', ':LiveGrepGitRoot<cr>', { desc = '[S]earch by [G]rep on Git Root' })
 vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })

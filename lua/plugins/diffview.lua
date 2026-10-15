@@ -29,6 +29,14 @@ local function jump_diff_hunk(direction)
         while line <= last_line and not line_is_changed(line) do
           line = line + 1
         end
+        if line <= last_line then
+          return line
+        end
+
+        line = 1
+        while line <= last_line and not line_is_changed(line) do
+          line = line + 1
+        end
         return line <= last_line and line or nil
       end
 
@@ -39,7 +47,13 @@ local function jump_diff_hunk(direction)
         line = line - 1
       end
       if line < 1 then
-        return nil
+        line = last_line
+        while line >= 1 and not line_is_changed(line) do
+          line = line - 1
+        end
+        if line < 1 then
+          return nil
+        end
       end
       while line > 1 and line_is_changed(line - 1) do
         line = line - 1
@@ -83,6 +97,38 @@ local function hide_diff_sign_column(_, winid, ctx)
   end
 end
 
+local function ensure_lsp_for_local_new_file(bufnr, _, ctx)
+  if ctx.symbol ~= 'b'
+    or not vim.api.nvim_buf_is_valid(bufnr)
+    or vim.bo[bufnr].buftype ~= ''
+  then
+    return
+  end
+
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  if name == '' or vim.startswith(name, 'diffview://') then
+    return
+  end
+
+  -- Diffview can create or re-list the local buffer after Neovim's normal
+  -- FileType LSP activation has already run. Re-run only the core LSP group;
+  -- its callback reuses attached clients and starts any missing applicable one.
+  vim.schedule(function()
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      pcall(vim.api.nvim_exec_autocmds, 'FileType', {
+        buffer = bufnr,
+        group = 'nvim.lsp.enable',
+        modeline = false,
+      })
+    end
+  end)
+end
+
+local function configure_diff_window(bufnr, winid, ctx)
+  hide_diff_sign_column(bufnr, winid, ctx)
+  ensure_lsp_for_local_new_file(bufnr, winid, ctx)
+end
+
 local function arrange_review_panes(view)
   local layout = view.cur_layout
   local old_file = layout and layout.a
@@ -107,23 +153,28 @@ end
 
 require('diffview').setup({
   hooks = {
-    diff_buf_win_enter = hide_diff_sign_column,
+    diff_buf_win_enter = configure_diff_window,
     view_opened = arrange_review_panes,
   },
   keymaps = {
     view = {
+      { 'n', 'q', '<cmd>DiffviewClose<CR>', { desc = 'Close Diffview' } },
       { 'n', 'gn', jump_to_next_change, { desc = 'Jump to the next changed hunk' } },
       { 'n', 'gp', jump_to_prev_change, { desc = 'Jump to the previous changed hunk' } },
       { 'n', '<C-u>', scroll_diff_up, { desc = 'Scroll both diff panes up' } },
       { 'n', '<C-d>', scroll_diff_down, { desc = 'Scroll both diff panes down' } },
     },
     file_panel = {
+      { 'n', 'q', '<cmd>DiffviewClose<CR>', { desc = 'Close Diffview' } },
       { 'n', 'gn', jump_to_next_change, { desc = 'Jump to the next changed hunk' } },
       { 'n', 'gp', jump_to_prev_change, { desc = 'Jump to the previous changed hunk' } },
       { 'n', 'j', actions.select_next_entry, { desc = 'Open the next file' } },
       { 'n', 'k', actions.select_prev_entry, { desc = 'Open the previous file' } },
       { 'n', '<C-u>', scroll_diff_up, { desc = 'Scroll both diff panes up' } },
       { 'n', '<C-d>', scroll_diff_down, { desc = 'Scroll both diff panes down' } },
+    },
+    file_history_panel = {
+      { 'n', 'q', '<cmd>DiffviewClose<CR>', { desc = 'Close Diffview' } },
     },
   },
 })
